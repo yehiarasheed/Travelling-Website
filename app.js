@@ -15,4 +15,26 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/',function(req,res){res.render('login')})
   app.listen(3000);
   
+app.post('/registration',function(req,res)
+{
+  var user = req.body.username;
+  var pass = req.body.password;
+  console.log(user);
+  console.log(pass);
+})
+
+app.get('/registration', (req, res) => {
   
+  res.render('registration');
+});
+
+var MongoClient = require('mongodb').MongoClient;
+
+// Connect to the db
+MongoClient.connect("mongodb://localhost:27017/MyDb", function (err, db) {
+   
+     if(err) throw err;
+
+     //Write databse Insert/Update/Query code here..
+                
+});
