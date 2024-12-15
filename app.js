@@ -22,7 +22,7 @@ app.post('/registration',function(req,res)
   console.log(user);
   console.log(pass);
 })
-
+//get for registration
 app.get('/registration', (req, res) => {
   
   res.render('registration');
