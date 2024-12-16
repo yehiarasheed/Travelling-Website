@@ -6,14 +6,14 @@ var app = express();
 
 // MongoDB setup
 const { MongoClient } = require('mongodb');
-const uri = "mongodb://127.0.0.1:27017"; // Replace with your MongoDB connection string
+const uri = "mongodb://127.0.0.1:27017";
 const client = new MongoClient(uri);
 let db;
 
 async function connectToDatabase() {
     try {
         await client.connect();
-        db = client.db('myDB'); // Replace 'userdb' with your desired database name
+        db = client.db('myDB'); 
         console.log("Connected successfully to MongoDB");
     } catch (err) {
         console.error("Error connecting to MongoDB:", err.message);
@@ -32,8 +32,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.get('/', function (req, res) {
-    res.render('login');
+    const successMessage = req.query.success || null; 
+    res.render('login', { message: successMessage }); 
 });
+
 
 app.get('/registration', function (req, res) {
     res.render('registration');
@@ -43,7 +45,7 @@ app.get('/registration', function (req, res) {
 app.post('/register', async function (req, res) {
     const { username, password } = req.body;
 
-    // Validate inputs
+    
     if (!username || !password) {
         return res.status(400).send("Error: Username and password cannot be empty.");
     }
@@ -61,13 +63,20 @@ app.post('/register', async function (req, res) {
         await userCollection.insertOne({ username: username, password: password });
         console.log("User registered successfully:", username);
 
-        // Redirect to login with success message
-        res.redirect('/?success=Registration successful. Please log in.');
+        // Send popup message and redirect
+        res.send(`
+            <script>
+                alert("Registration successful! Please log in.");
+                window.location.href = "/";
+            </script>
+        `);
     } catch (err) {
         console.error("Error during registration:", err.message);
         res.status(500).send("Error: Something went wrong during registration.");
     }
 });
+
+
 
 // Start the server
 app.listen(3000, function () {
