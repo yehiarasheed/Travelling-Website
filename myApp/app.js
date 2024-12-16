@@ -13,7 +13,7 @@ let db;
 async function connectToDatabase() {
     try {
         await client.connect();
-        db = client.db('myDB'); 
+        db = client.db('myDB');
         console.log("Connected successfully to MongoDB");
     } catch (err) {
         console.error("Error connecting to MongoDB:", err.message);
@@ -32,10 +32,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.get('/', function (req, res) {
-    
-    res.render('login'); 
+    res.render('login', { message: null });
 });
-
 
 app.get('/registration', function (req, res) {
     res.render('registration');
@@ -45,7 +43,6 @@ app.get('/registration', function (req, res) {
 app.post('/register', async function (req, res) {
     const { username, password } = req.body;
 
-    
     if (!username || !password) {
         return res.status(400).send("Error: Username and password cannot be empty.");
     }
@@ -77,6 +74,36 @@ app.post('/register', async function (req, res) {
 });
 
 
+app.post('/', async function (req, res) {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.render('login', { message: 'Please enter both username and password.' });
+    }
+
+    try {
+        const userCollection = db.collection('myCollection');
+        const user = await userCollection.findOne({ username: username });
+
+        // Check if user exists and password matches
+        if (!user) {
+            return res.render('login', { message: 'User not found.' });
+        }
+
+        if (user.password !== password) {
+            return res.render('login', { message: 'Incorrect password.' });
+        }
+
+        console.log("Login successful:", username);
+
+       
+        res.redirect('/home');  
+
+    } catch (err) {
+        console.error("Error during login:", err.message);
+        res.status(500).send("Error: Something went wrong during login.");
+    }
+});
 
 // Start the server
 app.listen(3000, function () {
