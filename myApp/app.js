@@ -32,8 +32,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.get('/', function (req, res) {
-    const successMessage = req.query.success || null; 
-    res.render('login', { message: successMessage }); 
+    
+    res.render('login'); 
 });
 
 
