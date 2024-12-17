@@ -28,6 +28,62 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Search Route (GET)
+const destinations = [
+    {
+        name: "rome",
+        description: "Rome today is one of the most important tourist destinations of the world, due to the incalculable immensity of its archaeological and art treasures, as well as for the charm of its unique traditions, the beauty of its panoramic views, and the majesty of its magnificent villas.",
+        image: "rome.png",
+        pageTitle: "rome",
+        category: "city"
+    },
+    {
+        name: "paris",
+        description: "It is known as the most romantic city in the world, and is home to some world famous sights that are constantly shown in travel magazines, movies, and other works of art. Paris, the capital of France, has a population of over two million people and is one of Europe's most-visited cities.",
+        image: "paris.png",
+        pageTitle: "paris",
+        category: "city"
+    },
+    {
+      name: "bali island",
+      description: "Also known as the Land of the Gods, Bali appeals through its sheer natural beauty of looming volcanoes and lush terraced rice fields that exude peace and serenity. It is also famous for surfers' paradise.",
+      image: "bali.png",
+      pageTitle: "bali",
+      category: "island"
+  },
+  {
+    name: "annapurna circuit",
+    description: "Annapurna Circuit has been voted as the best long-distance trek in the world, as it combined a wide variety of climate zones from tropics at 600m above sea level to the arctic at 5416m above sea level at the Thorong La pass and cultural variety from Hindu villages at the low foothills to the Tibetan culture of Manang.",
+    image: "annapurna.png",
+    pageTitle: "annapurna",
+    category: "hiking"
+  },
+  {
+    name: "inca trail to machu picchu",
+    description: "Peru's Inca Trail is perhaps the world's greatest hike because it combines the best of both types of travel: a four-to-five day walk to the spectacular lost city of Machu Picchu that winds through the zone where the snowcapped Andes Mountains crash into the lush Amazon jungle.",
+    image: "inca.png",
+    pageTitle: "inca",
+    category: "hiking"
+  },
+  {
+    name: "santorini island",
+    description: "With its stunning turquoise waters and picturesque villages, great activities including wine-tasting, authentic Greek cuisine, regular boat excursions due to its ideal location for island hopping, small Greek island of Santorini became so popular as a holiday destination.",
+    image: "santorini.png",
+    pageTitle: "santorini",
+    category: "island"
+  },
+  ];
+  
+  //Search route (POST)
+  app.post('/search', (req, res) => {
+    const query = req.body.Search.toLowerCase().trim();
+    let filteredDestinations = destinations.filter(destinations => destinations.name.toLowerCase().includes(query));
+    if (filteredDestinations.length === 0) {
+        filteredDestinations = [];  
+    }
+    res.render('searchresults', { destinations: filteredDestinations });
+  });
+
 // Navigation
 app.get('/', function (req, res) {
     res.render('login', { message: null });
