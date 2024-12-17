@@ -124,7 +124,12 @@ app.post('/', async function (req, res) {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.render('login', { message: 'Please enter both username and password.' });
+        return res.send(`
+            <script>
+                alert("Please enter both username and password.");
+                window.location.href = "/";
+            </script>
+        `);
     }
 
     try {
@@ -133,24 +138,36 @@ app.post('/', async function (req, res) {
 
         // Check if user exists and password matches
         if (!user) {
-            return res.render('login', { message: 'User not found.' });
+            return res.send(`
+                <script>
+                    alert("User not found.");
+                    window.location.href = "/";
+                </script>
+            `);
         }
 
         if (user.password !== password) {
-            return res.render('login', { message: 'Incorrect password.' });
+            return res.send(`
+                <script>
+                    alert("Incorrect password.");
+                    window.location.href = "/";
+                </script>
+            `);
         }
 
         console.log("Login successful:", username);
-
-       
         res.redirect('/home');  
 
     } catch (err) {
         console.error("Error during login:", err.message);
-        res.status(500).send("Error: Something went wrong during login.");
+        res.status(500).send(`
+            <script>
+                alert("Something went wrong during login.");
+                window.location.href = "/";
+            </script>
+        `);
     }
 });
-
 
 app.post('/addDestination', async function (req, res) {
     const { destination } = req.body;
