@@ -151,6 +151,36 @@ app.post('/', async function (req, res) {
     }
 });
 
+
+app.post('/addDestination', async function (req, res) {
+    const { destination } = req.body;
+
+    if (!destination) {
+        return res.status(400).json({err:"Destination is required."});
+    }
+
+    try {
+        // Check if destination already exists
+        const destinationCollection = db.collection('destinations');
+        const exists = await destinationCollection.findOne({ name: destination });
+
+        if (exists) {
+            return res.status(400).json({err:"Destination already exists."});
+        }
+
+        // Insert new destination into database
+        const newDocument = await destinationCollection.insertOne({ name: destination, created_at: new Date().getTime() });
+
+        res.json({
+            success: true,
+            id: newDocument.insertedId
+        });
+    } catch (err) {
+        console.error("Error during adding destination:", err.message);
+        res.status(500).json({err:"Something went wrong while adding destination."});
+    }
+});
+
 // Start the server
 app.listen(3000, function () {
     console.log("Server is running on http://localhost:3000");
