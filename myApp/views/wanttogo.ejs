@@ -12,7 +12,7 @@
             color: white;
             text-align: center;
             -webkit-text-stroke: 1px blue;
-        }
+        } 
     </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,5 +38,39 @@
             </form>
         </div>
     </nav>
+    <div class="container">
+        <form class="d-flex flex-column justify-content-center align-items-center" method="POST" id="destinationForm">            >
+            <h1 class="mb-3">Want To Go List</h1>
+            <input type="text" id="destionationInp" class="form-control col-3 mb-3" name="destination" placeholder="Enter destination" />
+            <button type="submit" class="btn btn-primary">Add To List</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('destinationForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const destination = event.target.destination.value;
+
+            try {
+                const response = await fetch('/addDestination', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ destination })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('destionationInp').value = '';
+                    alert('Destination added successfully!');
+                } else {
+                    alert('Error: ' + result.err);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while adding the destination.');
+            }
+        });
+    </script>
 </body>
 </html>
