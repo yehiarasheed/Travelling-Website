@@ -259,4 +259,157 @@ app.listen(3000, function () {
     console.log("Server is running on http://localhost:3000");
 });
 
+app.get('/wanttogo', async function (req, res) {
+    const { username } = req.session;
+
+    if (!username) {
+        return res.send(`
+            <script>
+                alert("You must be logged in to view your Want-to-Go List.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+
+    try {
+        const userCollection = db.collection('wantToGoList');
+        const userDestinations = await userCollection.find({ username }).toArray();
+
+        res.render('wanttogo', { destinations: userDestinations });
+    } catch (err) {
+        console.error("Error fetching Want-to-Go List:", err.message);
+        res.status(500).send("Error fetching your Want-to-Go List.");
+    }
+});
+
+app.post('/addToWantToGo', async function (req, res) {
+    const { username } = req.session;
+    const { destination } = req.body;
+
+    if (!username) {
+        return res.status(401).send("You must be logged in to add destinations.");
+    }
+
+    try {
+        const wantToGoCollection = db.collection('wantToGoList');
+
+        // Check if the destination already exists
+        const exists = await wantToGoCollection.findOne({ username, destination });
+
+        if (exists) {
+            return res.send(`
+                <script>
+                    alert("This destination is already in your Want-to-Go List.");
+                    window.history.back();
+                </script>
+            `);
+        }
+
+        // Add the destination to the Want-to-Go List
+        await wantToGoCollection.insertOne({ username, destination, addedAt: new Date() });
+        res.send(`
+            <script>
+                alert("Destination added to your Want-to-Go List!");
+                window.history.back();
+            </script>
+        `);
+    } catch (err) {
+        console.error("Error adding to Want-to-Go List:", err.message);
+        res.status(500).send("Something went wrong while adding the destination.");
+    }
+});
+
+const session = require('express-session');
+
+// Session configuration
+app.use(session({
+    secret: 'secret-key', // Change this to a strong secret key
+    resave: false,        // Don't save session if unmodified
+    saveUninitialized: false, // Don't create session until something is stored
+    cookie: { secure: false } // Set 'true' if using HTTPS
+}));
+
+function isAuthenticated(req, res, next) {
+    if (req.session && req.session.username) {
+        // User is authenticated
+        next();
+    } else {
+        // Redirect to login page if not authenticated
+        res.send(`
+            <script>
+                alert("You must log in first.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+}
+
+app.get('/home', isAuthenticated, function (req, res) {
+    res.render('home', { username: req.session.username });
+});
+
+app.get('/wanttogo', isAuthenticated, async function (req, res) {
+    try {
+        const wantToGoCollection = db.collection('wantToGoList');
+        const userDestinations = await wantToGoCollection.find({ username: req.session.username }).toArray();
+
+        res.render('wanttogo', { destinations: userDestinations });
+    } catch (err) {
+        console.error("Error fetching Want-to-Go List:", err.message);
+        res.status(500).send("Error fetching your Want-to-Go List.");
+    }
+});
+
+app.post('/', async function (req, res) {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.send(`
+            <script>
+                alert("Please enter both username and password.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+
+    try {
+        const userCollection = db.collection('myCollection');
+        const user = await userCollection.findOne({ username: username });
+
+        if (!user) {
+            return res.send(`
+                <script>
+                    alert("User not found.");
+                    window.location.href = "/";
+                </script>
+            `);
+        }
+
+        if (user.password !== password) {
+            return res.send(`
+                <script>
+                    alert("Incorrect password.");
+                    window.location.href = "/";
+                </script>
+            `);
+        }
+
+        // Store username in session
+        req.session.username = username;
+
+        console.log("Login successful:", username);
+        res.redirect('/home');  
+
+    } catch (err) {
+        console.error("Error during login:", err.message);
+        res.status(500).send(`
+            <script>
+                alert("Something went wrong during login.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+});
+
+
 module.exports = app;
