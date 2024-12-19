@@ -348,20 +348,18 @@ app.get('/wanttogo', isAuthenticated, async function (req, res) {
         const currentUser = await userCollection.findOne({ username });
 
         if (!currentUser) {
-            res.status(500).send("Error User Not Found.");
+            return res.status(500).send("Error: User not found.");
         }
 
+        // Default to an empty array if `destinations` is undefined
+        const userDestinations = currentUser.destinations || [];
 
-        // Fetch destinations from the 'destinations' collection in the 'myDB' database
-
-        // Render the 'wanttogo' view and pass the destinations to it
-        res.render('wanttogo', { destinations: currentUser.destinations });
+        res.render('wanttogo', { destinations: userDestinations });
     } catch (err) {
         console.error("Error fetching Want-to-Go List:", err.message);
         res.status(500).send("Error fetching your Want-to-Go List.");
     }
 });
-
 
 app.get('/debug', (req, res) => {
     res.json({ session: req.session });
