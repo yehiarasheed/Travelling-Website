@@ -20,6 +20,16 @@ async function connectToDatabase() {
 }
 connectToDatabase();
 
+const session = require('express-session');
+
+// Session configuration
+app.use(session({
+    secret: 'secret-key', // Change this to a strong secret key
+    resave: false,        // Don't save session if unmodified
+    saveUninitialized: false, // Don't create session until something is stored
+    cookie: { secure: false } // Set 'true' if using HTTPS
+}));
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -89,35 +99,35 @@ app.get('/', function (req, res) {
     res.render('login', { message: null });
 });
 
-app.get('/annapurna', function (req, res) {
+app.get('/annapurna',isAuthenticated, function (req, res) {
     res.render('annapurna');
 });
 
-app.get('/bali', function (req, res) {
+app.get('/bali',isAuthenticated, function (req, res) {
     res.render('bali');
 });
 
-app.get('/cities', function (req, res) {
+app.get('/cities',isAuthenticated, function (req, res) {
     res.render('cities');
 });
 
-app.get('/hiking', function (req, res) {
+app.get('/hiking',isAuthenticated, function (req, res) {
     res.render('hiking');
 });
 
-app.get('/home', function (req, res) {
+/*app.get('/home', function (req, res) {
     res.render('home');
-});
+});*/
 
-app.get('/inca', function (req, res) {
+app.get('/inca',isAuthenticated, function (req, res) {
     res.render('inca');
 });
 
-app.get('/islands', function (req, res) {
+app.get('/islands',isAuthenticated, function (req, res) {
     res.render('islands');
 });
 
-app.get('/paris', function (req, res) {
+app.get('/paris',isAuthenticated, function (req, res) {
     res.render('paris');
 });
 
@@ -125,21 +135,21 @@ app.get('/registration', function (req, res) {
     res.render('registration');
 });
 
-app.get('/rome', function (req, res) {
+app.get('/rome',isAuthenticated, function (req, res) {
     res.render('rome');
 });
 
-app.get('/santorini', function (req, res) {
+app.get('/santorini',isAuthenticated, function (req, res) {
     res.render('santorini');
 });
 
-app.get('/searchresults', function (req, res) {
+app.get('/searchresults',isAuthenticated, function (req, res) {
     res.render('searchresults');
 });
 
-app.get('/wanttogo', function (req, res) {
+/*app.get('/wanttogo',isAuthenticated, function (req, res) {
     res.render('wanttogo');
-});
+});*/
 
 // Registration POST route
 app.post('/register', async function (req, res) {
@@ -192,7 +202,6 @@ app.post('/', async function (req, res) {
         const userCollection = db.collection('myCollection');
         const user = await userCollection.findOne({ username: username });
 
-        // Check if user exists and password matches
         if (!user) {
             return res.send(`
                 <script>
@@ -211,8 +220,19 @@ app.post('/', async function (req, res) {
             `);
         }
 
-        console.log("Login successful:", username);
-        res.redirect('/home');  
+        // Clear the existing session and start a new one
+        req.session.regenerate(err => {
+            if (err) {
+                console.error("Error regenerating session:", err.message);
+                return res.status(500).send("Internal server error");
+            }
+
+            // Store the username in the new session
+            req.session.username = username;
+
+            console.log("New session created:", req.session);
+            res.redirect('/home');
+        });
 
     } catch (err) {
         console.error("Error during login:", err.message);
@@ -258,5 +278,159 @@ app.post('/addDestination', async function (req, res) {
 app.listen(3000, function () {
     console.log("Server is running on http://localhost:3000");
 });
+
+/*app.get('/wanttogo', async function (req, res) {
+    const { username } = req.session;
+
+    if (!username) {
+        return res.send(`
+            <script>
+                alert("You must be logged in to view your Want-to-Go List.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+
+    try {
+        const userCollection = db.collection('wantToGoList');
+        const userDestinations = await userCollection.find({ username }).toArray();
+
+        res.render('wanttogo', { destinations: userDestinations });
+    } catch (err) {
+        console.error("Error fetching Want-to-Go List:", err.message);
+        res.status(500).send("Error fetching your Want-to-Go List.");
+    }
+});*/
+
+app.post('/addToWantToGo', async function (req, res) {
+    const { username } = req.session;
+    const { destination } = req.body;
+
+    if (!username) {
+        return res.status(401).send("You must be logged in to add destinations.");
+    }
+
+    try {
+        const wantToGoCollection = db.collection('wantToGoList');
+
+        // Check if the destination already exists
+        const exists = await wantToGoCollection.findOne({ username, destination });
+
+        if (exists) {
+            return res.send(`
+                <script>
+                    alert("This destination is already in your Want-to-Go List.");
+                    window.history.back();
+                </script>
+            `);
+        }
+
+        // Add the destination to the Want-to-Go List
+        await wantToGoCollection.insertOne({ username, destination, addedAt: new Date() });
+        res.send(`
+            <script>
+                alert("Destination added to your Want-to-Go List!");
+                window.history.back();
+            </script>
+        `);
+    } catch (err) {
+        console.error("Error adding to Want-to-Go List:", err.message);
+        res.status(500).send("Something went wrong while adding the destination.");
+    }
+});
+
+function isAuthenticated(req, res, next) {    
+    console.log("Session Data:", req.session); // Debug session data
+    if (req.session && req.session.username) {
+        // User is authenticated
+        next();
+    } else {
+        // Redirect to login page if not authenticated
+        res.send(`
+            <script>
+                alert("You must log in first.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+}
+
+// Home route requires authentication
+app.get('/home', isAuthenticated, function (req, res) {
+    res.render('home',{ username: req.session.username });
+});
+
+// Want-to-go route requires authentication
+app.get('/wanttogo', isAuthenticated, async function (req, res) {
+    try {
+        // Fetch destinations from the 'destinations' collection in the 'myDB' database
+        const wantToGoCollection = db.collection('destinations');
+        
+        // Find all destinations
+        const userDestinations = await wantToGoCollection.find({}).toArray();
+
+        // Render the 'wanttogo' view and pass the destinations to it
+        res.render('wanttogo', { destinations: userDestinations });
+    } catch (err) {
+        console.error("Error fetching Want-to-Go List:", err.message);
+        res.status(500).send("Error fetching your Want-to-Go List.");
+    }
+});
+
+
+app.get('/debug', (req, res) => {
+    res.json({ session: req.session });
+});
+
+/*app.post('/', async function (req, res) {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.send(`
+            <script>
+                alert("Please enter both username and password.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+
+    try {
+        const userCollection = db.collection('myCollection');
+        const user = await userCollection.findOne({ username: username });
+
+        if (!user) {
+            return res.send(`
+                <script>
+                    alert("User not found.");
+                    window.location.href = "/";
+                </script>
+            `);
+        }
+
+        if (user.password !== password) {
+            return res.send(`
+                <script>
+                    alert("Incorrect password.");
+                    window.location.href = "/";
+                </script>
+            `);
+        }
+
+        // Store username in session
+        req.session.username = username;
+
+        console.log("Login successful:", username);
+        res.redirect('/home');  
+
+    } catch (err) {
+        console.error("Error during login:", err.message);
+        res.status(500).send(`
+            <script>
+                alert("Something went wrong during login.");
+                window.location.href = "/";
+            </script>
+        `);
+    }
+});*/
 
 module.exports = app;
