@@ -247,7 +247,12 @@ app.post('/', async function (req, res) {
 
 app.post('/addDestination', async function (req, res) {
     const { destination } = req.body;
+    const { username } = req.session;
 
+    if(!username){
+        return res.status(400).json({err:"You must be logged in!"});
+    }
+    
     if (!destination) {
         return res.status(400).json({err:"Destination is required."});
     }
@@ -255,14 +260,16 @@ app.post('/addDestination', async function (req, res) {
     try {
         // Check if destination already exists
         const destinationCollection = db.collection('destinations');
-        const exists = await destinationCollection.findOne({ name: destination });
+        const destinationKey = destination.toLowerCase().trim()
+
+        const exists = await destinationCollection.findOne({ username, destinationKey });
 
         if (exists) {
             return res.status(400).json({err:"Destination already exists."});
         }
 
         // Insert new destination into database
-        const newDocument = await destinationCollection.insertOne({ name: destination, created_at: new Date().getTime() });
+        const newDocument = await destinationCollection.insertOne({ username, name: destination, destinationKey, created_at: new Date().getTime() });
 
         res.json({
             success: true,
@@ -312,9 +319,10 @@ app.post('/addToWantToGo', async function (req, res) {
 
     try {
         const wantToGoCollection = db.collection('wantToGoList');
+        const destinationKey = destionation.toLowerCase().trim()
 
         // Check if the destination already exists
-        const exists = await wantToGoCollection.findOne({ username, destination });
+        const exists = await wantToGoCollection.findOne({ username, destinationKey });
 
         if (exists) {
             return res.send(`
@@ -326,7 +334,7 @@ app.post('/addToWantToGo', async function (req, res) {
         }
 
         // Add the destination to the Want-to-Go List
-        await wantToGoCollection.insertOne({ username, destination, addedAt: new Date() });
+        await wantToGoCollection.insertOne({ username, destination, destinationKey, addedAt: new Date() });
         res.send(`
             <script>
                 alert("Destination added to your Want-to-Go List!");
@@ -363,11 +371,13 @@ app.get('/home', isAuthenticated, function (req, res) {
 // Want-to-go route requires authentication
 app.get('/wanttogo', isAuthenticated, async function (req, res) {
     try {
+        const { username } = req.session;
+
         // Fetch destinations from the 'destinations' collection in the 'myDB' database
         const wantToGoCollection = db.collection('destinations');
         
         // Find all destinations
-        const userDestinations = await wantToGoCollection.find({}).toArray();
+        const userDestinations = await wantToGoCollection.find({username}).toArray();
 
         // Render the 'wanttogo' view and pass the destinations to it
         res.render('wanttogo', { destinations: userDestinations });
