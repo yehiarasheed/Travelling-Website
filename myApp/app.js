@@ -259,21 +259,30 @@ app.post('/addDestination', async function (req, res) {
 
     try {
         // Check if destination already exists
-        const destinationCollection = db.collection('destinations');
-        const destinationKey = destination.toLowerCase().trim()
+        const userCollection = db.collection('myCollection');
+        const existingUser = await userCollection.findOne({ username });
 
-        const exists = await destinationCollection.findOne({ username, destinationKey });
+        if (!existingUser) {
+            return res.status(400).send("Error: User not found.");
+        }
 
-        if (exists) {
+        const destinationKey = destination.toLowerCase().trim();
+
+        // Check if the destination already exists in the user's destinations array
+        const destinationExists = existingUser.destinations && existingUser.destinations.some(dest => dest.destinationKey === destinationKey);
+
+        if (destinationExists) {
             return res.status(400).json({err:"Destination already exists."});
         }
 
-        // Insert new destination into database
-        const newDocument = await destinationCollection.insertOne({ username, name: destination, destinationKey, created_at: new Date().getTime() });
+        // Add the new destination to the user's destinations array
+        await userCollection.updateOne(
+            { username },
+            { $push: { destinations: { destinationKey, name: destination } } }
+        );
 
         res.json({
             success: true,
-            id: newDocument.insertedId
         });
     } catch (err) {
         console.error("Error during adding destination:", err.message);
@@ -309,43 +318,6 @@ app.listen(3000, function () {
     }
 });*/
 
-app.post('/addToWantToGo', async function (req, res) {
-    const { username } = req.session;
-    const { destination } = req.body;
-
-    if (!username) {
-        return res.status(401).send("You must be logged in to add destinations.");
-    }
-
-    try {
-        const wantToGoCollection = db.collection('wantToGoList');
-        const destinationKey = destionation.toLowerCase().trim()
-
-        // Check if the destination already exists
-        const exists = await wantToGoCollection.findOne({ username, destinationKey });
-
-        if (exists) {
-            return res.send(`
-                <script>
-                    alert("This destination is already in your Want-to-Go List.");
-                    window.history.back();
-                </script>
-            `);
-        }
-
-        // Add the destination to the Want-to-Go List
-        await wantToGoCollection.insertOne({ username, destination, destinationKey, addedAt: new Date() });
-        res.send(`
-            <script>
-                alert("Destination added to your Want-to-Go List!");
-                window.history.back();
-            </script>
-        `);
-    } catch (err) {
-        console.error("Error adding to Want-to-Go List:", err.message);
-        res.status(500).send("Something went wrong while adding the destination.");
-    }
-});
 
 function isAuthenticated(req, res, next) {    
     console.log("Session Data:", req.session); // Debug session data
@@ -372,15 +344,18 @@ app.get('/home', isAuthenticated, function (req, res) {
 app.get('/wanttogo', isAuthenticated, async function (req, res) {
     try {
         const { username } = req.session;
+        const userCollection = db.collection('myCollection');
+        const currentUser = await userCollection.findOne({ username });
+
+        if (!currentUser) {
+            res.status(500).send("Error User Not Found.");
+        }
+
 
         // Fetch destinations from the 'destinations' collection in the 'myDB' database
-        const wantToGoCollection = db.collection('destinations');
-        
-        // Find all destinations
-        const userDestinations = await wantToGoCollection.find({username}).toArray();
 
         // Render the 'wanttogo' view and pass the destinations to it
-        res.render('wanttogo', { destinations: userDestinations });
+        res.render('wanttogo', { destinations: currentUser.destinations });
     } catch (err) {
         console.error("Error fetching Want-to-Go List:", err.message);
         res.status(500).send("Error fetching your Want-to-Go List.");
