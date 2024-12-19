@@ -13,6 +13,24 @@
             text-align: center;
             -webkit-text-stroke: 1px blue;
         } 
+        .destination-box {
+            border: 2px solid blue;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            font-size: 1.2em;
+            color: blue;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        
     </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,19 +50,31 @@
             <ul class="navbar-nav mr-auto">
             </ul>
             <form method="POST" action='/search' class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" name="Search" type="search" placeholder="Search"
-                    aria-label="Search">
+                <input class="form-control mr-sm-2 col-6" name="Search" type="search" placeholder="Search"
+                    aria-label="Search"  style="width: 60%; max-width: 500px;">
                 <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
             </form>
         </div>
     </nav>
+
     <div class="container">
-        <form class="d-flex flex-column justify-content-center align-items-center" method="POST" id="destinationForm">            >
+        <form class="d-flex flex-column justify-content-center align-items-center" method="POST" id="destinationForm">
             <h1 class="mb-3">Want To Go List</h1>
-            <input type="text" id="destionationInp" class="form-control col-3 mb-3" name="destination" placeholder="Enter destination" />
+            <input type="text" id="destionationInp" class="form-control col-7 mb-3" name="destination" placeholder="Enter destination" style="text-align: center;" />
             <button type="submit" class="btn btn-primary">Add To List</button>
         </form>
+        
+        <!-- Display destinations from MongoDB -->
+        <div class="container mt-4">
+            <% destinations.forEach(function(destination) { %>
+                <div class="destination-box">
+                    <h3><%= destination.name %></h3>
+                    <p><%= destination.description %></p>
+                </div>
+            <% }); %>
+        </div>
     </div>
+
     <script>
         document.getElementById('destinationForm').addEventListener('submit', async function(event) {
             event.preventDefault();
