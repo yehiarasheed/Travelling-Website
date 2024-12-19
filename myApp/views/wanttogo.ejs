@@ -29,6 +29,7 @@
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
+            color: white;
         }
         
     </style>
@@ -57,18 +58,18 @@
         </div>
     </nav>
 
-    <div class="container">
-        <!-- Display destinations from MongoDB -->
-        <div class="container mt-4">
+    <div class="container mt-4">
+        <% if (destinations && destinations.length > 0) { %>
             <% destinations.forEach(function(destination) { %>
                 <div class="destination-box">
                     <h3><%= destination.name %></h3>
                     <p><%= destination.description %></p>
                 </div>
-            <% }); %>
-        </div>
-    </div>
-
+            <% }) %>
+        <% } else { %>
+            <p>No destinations in your Want-to-Go List yet. Start adding some!</p>
+        <% } %>
+    </div>    
     
 </body>
 </html>
